@@ -3,7 +3,6 @@ import cv2
 import dlib
 import numpy as np
 import time
-import playsound
 import face_recognition
 import datetime
 from tensorflow.keras.models import Sequential
@@ -11,9 +10,20 @@ from tensorflow.keras.layers import Dense, Dropout, Flatten
 from tensorflow.keras.layers import Conv2D
 from tensorflow.keras.layers import MaxPooling2D
 
+from pygame import mixer
+
+mixer.init()
+
+sound1 = mixer.Sound('Sounds/beep-02.wav')
+sound2 = mixer.Sound('Sounds/beep-03.wav')
+sound3 = mixer.Sound('Sounds/pay-attention.wav')
+
 driver_dataset = {'Barack Obama': [0, 0],
                   'Joe Biden': [0, 0],
                   'Shah Rukh Khan': [0, 0]}
+
+
+# 'Anshuman': [0, 0]}
 
 
 class Driver:
@@ -34,11 +44,11 @@ obama_face_encoding = face_recognition.face_encodings(obama_image)[0]
 biden_image = face_recognition.load_image_file("Images/biden.jpg")
 biden_face_encoding = face_recognition.face_encodings(biden_image)[0]
 
-#Load a third sample picture
+# Load a third sample picture
 # anshuman_image = face_recognition.load_image_file("Images/anshuman.jpg")
 # anshuman_face_encoding = face_recognition.face_encodings(anshuman_image)[0]
 
-#Load a fourth sample picture
+# Load a fourth sample picture
 srk_image = face_recognition.load_image_file("Images/srk.jpg")
 srk_face_encoding = face_recognition.face_encodings(srk_image)[0]
 
@@ -46,12 +56,14 @@ srk_face_encoding = face_recognition.face_encodings(srk_image)[0]
 known_face_encodings = [
     obama_face_encoding,
     biden_face_encoding,
-    srk_face_encoding
+    srk_face_encoding,
+    # anshuman_face_encoding
 ]
 known_face_names = [
     "Barack Obama",
     "Joe Biden",
-    "Shah Rukh Khan"
+    "Shah Rukh Khan",
+    # "Anshuman"
 ]
 
 # Initialize some variables
@@ -64,7 +76,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 MoodModel = Sequential()
 
-MoodModel.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(48,48,1)))
+MoodModel.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(48, 48, 1)))
 MoodModel.add(Conv2D(64, kernel_size=(3, 3), activation='relu'))
 MoodModel.add(MaxPooling2D(pool_size=(2, 2)))
 MoodModel.add(Dropout(0.25))
@@ -86,7 +98,8 @@ MoodModel.load_weights('MoodModel.h5')
 cv2.ocl.setUseOpenCL(False)
 
 cap = cv2.VideoCapture(0)
-
+# cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1500)
+# cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1500)
 emotion_dict = {0: "Angry", 1: "Disgusted", 2: "Fearful", 3: "Happy", 4: "Neutral", 5: "Sad", 6: "Surprised"}
 
 detector = dlib.get_frontal_face_detector()
@@ -151,15 +164,14 @@ def face_recog(frame):
 
 
 def distance(pt1, pt2):
-    return ((pt1[0]-pt2[0])**2 + (pt1[1]-pt2[1])**2)**0.5
+    return ((pt1[0] - pt2[0]) ** 2 + (pt1[1] - pt2[1]) ** 2) ** 0.5
 
 
 def midpoint(pt1, pt2):
-    return int((pt1[0]+pt2[0])/2), int((pt1[1]+pt2[1])/2)
+    return int((pt1[0] + pt2[0]) / 2), int((pt1[1] + pt2[1]) / 2)
 
 
 def rect_to_bb(rect):
-
     x = rect.left()
     y = rect.top()
     w = rect.right() - x
@@ -173,8 +185,13 @@ driverRecognized = False
 driverName = None
 noFaceCounter = 0
 starTime = 0
+score_right = 0
+score_left = 0
+score_up = 0
+score_down = 0
 
 while True:
+
     ret, img = cap.read()
 
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -192,8 +209,9 @@ while True:
 
             cv2.putText(img, f'Driver: {driver1.name}', (10, 70), cv2.FONT_HERSHEY_COMPLEX, 1.5, (255, 204, 0),
                         2)
-            driver1.updateTime(time.time()-starTime)
-            cv2.putText(img, f'TOD:{str(datetime.timedelta(seconds=(time.time()-starTime), microseconds=0))}', (985, 700),
+            driver1.updateTime(time.time() - starTime)
+            cv2.putText(img, f'TOD:{str(datetime.timedelta(seconds=(time.time() - starTime), microseconds=0))}',
+                        (985, 700),
                         cv2.FONT_HERSHEY_COMPLEX, 1.5, (0, 100, 255), 2)
 
             faces = detector(img_gray, 0)
@@ -211,7 +229,8 @@ while True:
                     cropped_img = np.expand_dims(np.expand_dims(cv2.resize(roi_gray, (48, 48)), -1), 0)
                     MoodPrediction = MoodModel.predict(cropped_img)
                     maxindex = int(np.argmax(MoodPrediction))
-                    cv2.putText(img, f'MOOD: {emotion_dict[maxindex]}', (50, 400), cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
+                    cv2.putText(img, f'MOOD: {emotion_dict[maxindex]}', (50, 500), cv2.FONT_HERSHEY_COMPLEX, 2,
+                                (255, 255, 255), 2)
 
                     landmarks = predictor(img_gray, face)
 
@@ -223,6 +242,33 @@ while True:
                         cv2.circle(img, (landmarks.part(i).x, landmarks.part(i).y), 4, (255, 255, 255), -1)
 
                     points = np.array(landmarks_list, np.int32)
+
+                    _, nose_val = landmarks_list[30]
+                    if nose_val < 300:
+                        cv2.putText(img, 'UP', (250, 400),
+                                    cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
+                        score_up += 1
+                        if score_up > 20:
+                            try:
+                                sound2.play()
+                                score_up = 0
+                            except:
+                                pass
+                    elif nose_val > 480:
+                        cv2.putText(img, 'DOWN', (250, 400),
+                                    cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
+                        score_down += 1
+                        if score_down > 20:
+                            try:
+                                sound2.play()
+                                score_down = 0
+                            except:
+                                pass
+                    else:
+                        cv2.putText(img, 'CENTER', (250, 400),
+                                    cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
+                        score_up = 0
+                        score_down = 0
 
                     # 1-37, 17-46
                     x_1, _ = landmarks_list[0]
@@ -237,12 +283,30 @@ while True:
                     if side_1_dist > side_2_dist + 30:
                         cv2.putText(img, 'FACE: LEFT', (50, 300),
                                     cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
+
+                        score_right += 1
+                        if score_right > 30:
+                            try:
+                                sound1.play()
+                                score_right = 0
+                            except:
+                                pass
+
                     elif side_2_dist > side_1_dist + 30:
                         cv2.putText(img, 'FACE: RIGHT', (50, 300),
                                     cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
+                        score_left += 1
+                        if score_left > 30:
+                            try:
+                                sound1.play()
+                                score2_left = 0
+                            except:
+                                pass
                     else:
                         cv2.putText(img, 'FACE: CENTER', (50, 300),
                                     cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
+                        score_right = 0
+                        score_left = 0
 
                     # faceconvexhull = cv2.convexHull(points)
 
@@ -257,7 +321,7 @@ while True:
 
                     cv2.line(img, eye1_top_center, eye1_bottom_center, (0, 255, 0), 2)
 
-                    eye1_ratio = distance(eye1_l, eye1_r)/distance(eye1_top_center, eye1_bottom_center)
+                    eye1_ratio = distance(eye1_l, eye1_r) / distance(eye1_top_center, eye1_bottom_center)
                     # horizontal/vertical
 
                     # EYE 2
@@ -274,7 +338,7 @@ while True:
                     eye2_ratio = distance(eye2_l, eye2_r) / distance(eye2_top_center, eye2_bottom_center)
 
                     if eye1_ratio > 5 and eye2_ratio > 5:
-                        cv2.putText(img, 'EYEs: Blinking', (50, 500), cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
+                        cv2.putText(img, 'EYES: Blinking', (50, 600), cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
                         eyeClosed += 1
 
                         if eyeClosed == 1:
@@ -283,9 +347,15 @@ while True:
                             eye_closed_elapsed_time = time.time() - eye_closed_start_time
 
                             if 100 > eye_closed_elapsed_time > 1.5:
-                                cv2.putText(img, 'ALERT: Drowsiness Detected', (50, 600), cv2.FONT_HERSHEY_COMPLEX, 2, (0, 0, 255),
-                                            2)
-                                playsound.playsound('pay-attention.mp3')
+                                cv2.putText(img, 'ALERT: Drowsiness Detected!!', (50, 700), cv2.FONT_HERSHEY_COMPLEX, 2,
+                                            (0, 0, 255), 2)
+                                try:
+                                    sound3.play()
+                                    eyeClosed = 0
+                                    eye_closed_start_time = 0
+                                    eye_closed_elapsed_time = 0
+                                except:
+                                    pass
                     else:
                         eyeClosed = 0
                         eye_closed_start_time = 0
@@ -324,7 +394,7 @@ while True:
                     eye1_left_white = cv2.countNonZero(threshold_eye1[0:h1, 0:int(w1 / 2)])
                     eye1_right_white = cv2.countNonZero(threshold_eye1[0:h1, int(w1 / 2):w1])
                     try:
-                        eye1_white_ratio = round(eye1_left_white/eye1_right_white, 2)
+                        eye1_white_ratio = round(eye1_left_white / eye1_right_white, 2)
                         eyeFound = True
                     except ZeroDivisionError:
                         pass
@@ -342,18 +412,18 @@ while True:
 
                     if eyeFound:
                         if (eye1_white_ratio + eye2_white_ratio) >= 2.6:
-                            cv2.putText(img, 'EYEs: LEFT', (50, 200),
+                            cv2.putText(img, 'EYES: LEFT', (50, 200),
                                         cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
                         elif 2.6 > (eye1_white_ratio + eye2_white_ratio) > 1:
-                            cv2.putText(img, 'EYEs: CENTER', (50, 200),
+                            cv2.putText(img, 'EYES: CENTER', (50, 200),
                                         cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
                         else:
-                            cv2.putText(img, 'EYEs: RIGHT', (50, 200),
+                            cv2.putText(img, 'EYES: RIGHT', (50, 200),
                                         cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
 
                     try:
                         img2 = cv2.merge((threshold_eye1, threshold_eye1, threshold_eye1))
-                        img[0:img2.shape[0], 950:950+img2.shape[1]] = img2
+                        img[0:img2.shape[0], 950:950 + img2.shape[1]] = img2
                         cv2.putText(img, 'RIGHT EYE', (1010, 100),
                                     cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 0), 2)
 
@@ -364,6 +434,7 @@ while True:
                     except:
                         cv2.putText(img, 'EYES NOT VISIBLE', (660, 100),
                                     cv2.FONT_HERSHEY_COMPLEX, 1, (255, 255, 0), 2)
+
             else:
                 noFaceCounter += 1
                 if noFaceCounter > 100:
@@ -377,7 +448,7 @@ while True:
                 driver1 = Driver(res)
                 starTime = time.time() - driver1.time
 
-        cv2.imshow('Advance Driver Assistance System', img)
+        cv2.imshow('Advance Driver Assistance & Monitoring System', img)
 
     key = cv2.waitKey(1)
 
