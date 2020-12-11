@@ -5,6 +5,7 @@ import numpy as np
 import time
 import face_recognition
 import datetime
+from imutils.video import VideoStream
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Flatten
 from tensorflow.keras.layers import Conv2D
@@ -90,12 +91,12 @@ MoodModel.add(Dense(1024, activation='relu'))
 MoodModel.add(Dropout(0.5))
 MoodModel.add(Dense(7, activation='softmax'))
 
-MoodModel.load_weights('MoodModel.h5')
+MoodModel.load_weights('Models/MoodModel.h5')
 
 # prevents openCL usage and unnecessary logging messages
 cv2.ocl.setUseOpenCL(False)
 
-cap = cv2.VideoCapture(0)
+vs = VideoStream().start()
 # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1500)
 # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1500)
 emotion_dict = {0: "Angry", 1: "Disgusted", 2: "Fearful", 3: "Happy", 4: "Neutral", 5: "Sad", 6: "Surprised"}
@@ -190,7 +191,7 @@ score_down = 0
 
 while True:
 
-    ret, img = cap.read()
+    ret, img = True, vs.read()
 
     img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -455,5 +456,5 @@ while True:
     elif key == ord('a'):
         cv2.imwrite('my_pic.jpg', img)
 
-cap.release()
+vs.stop()
 cv2.destroyAllWindows()
