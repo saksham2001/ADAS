@@ -20,10 +20,8 @@ sound3 = mixer.Sound('Sounds/pay-attention.wav')
 
 driver_dataset = {'Barack Obama': [0, 0],
                   'Joe Biden': [0, 0],
-                  'Shah Rukh Khan': [0, 0]}
-
-
-# 'Anshuman': [0, 0]}
+                  'Shah Rukh Khan': [0, 0],
+                  'Saksham': [0, 0]}
 
 
 class Driver:
@@ -45,8 +43,8 @@ biden_image = face_recognition.load_image_file("Images/biden.jpg")
 biden_face_encoding = face_recognition.face_encodings(biden_image)[0]
 
 # Load a third sample picture
-# anshuman_image = face_recognition.load_image_file("Images/anshuman.jpg")
-# anshuman_face_encoding = face_recognition.face_encodings(anshuman_image)[0]
+saksham_image = face_recognition.load_image_file("Images/saksham.png")
+saksham_face_encoding = face_recognition.face_encodings(saksham_image)[0]
 
 # Load a fourth sample picture
 srk_image = face_recognition.load_image_file("Images/srk.jpg")
@@ -57,13 +55,13 @@ known_face_encodings = [
     obama_face_encoding,
     biden_face_encoding,
     srk_face_encoding,
-    # anshuman_face_encoding
+    saksham_face_encoding
 ]
 known_face_names = [
     "Barack Obama",
     "Joe Biden",
     "Shah Rukh Khan",
-    # "Anshuman"
+    "Saksham"
 ]
 
 # Initialize some variables
@@ -244,7 +242,7 @@ while True:
                     points = np.array(landmarks_list, np.int32)
 
                     _, nose_val = landmarks_list[30]
-                    if nose_val < 300:
+                    if nose_val < 270:
                         cv2.putText(img, 'UP', (250, 400),
                                     cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
                         score_up += 1
@@ -254,7 +252,7 @@ while True:
                                 score_up = 0
                             except:
                                 pass
-                    elif nose_val > 480:
+                    elif nose_val > 400:
                         cv2.putText(img, 'DOWN', (250, 400),
                                     cv2.FONT_HERSHEY_COMPLEX, 2, (255, 255, 255), 2)
                         score_down += 1
@@ -299,7 +297,7 @@ while True:
                         if score_left > 30:
                             try:
                                 sound1.play()
-                                score2_left = 0
+                                score_left = 0
                             except:
                                 pass
                     else:
@@ -347,7 +345,7 @@ while True:
                             eye_closed_elapsed_time = time.time() - eye_closed_start_time
 
                             if 100 > eye_closed_elapsed_time > 1.5:
-                                cv2.putText(img, 'ALERT: Drowsiness Detected!!', (50, 700), cv2.FONT_HERSHEY_COMPLEX, 2,
+                                cv2.putText(img, 'ALERT: Drowsiness Detected!', (50, 700), cv2.FONT_HERSHEY_COMPLEX, 2,
                                             (0, 0, 255), 2)
                                 try:
                                     sound3.play()
