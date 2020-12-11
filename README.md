@@ -29,7 +29,7 @@
 
 * Use the following command to the Code `python3 app.py`
 
-###Screenshots
+### Screenshots
 ![Screenshot 1](Screenshots/scr1.jpeg)
 ![Screenshot 1](Screenshots/scr2.jpeg)
 ![Screenshot 1](Screenshots/scr3.jpeg)
