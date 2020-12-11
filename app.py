@@ -96,7 +96,7 @@ MoodModel.load_weights('Models/MoodModel.h5')
 # prevents openCL usage and unnecessary logging messages
 cv2.ocl.setUseOpenCL(False)
 
-vs = VideoStream(usePiCamera=True).start()
+vs = VideoStream().start()
 # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1500)
 # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1500)
 emotion_dict = {0: "Angry", 1: "Disgusted", 2: "Fearful", 3: "Happy", 4: "Neutral", 5: "Sad", 6: "Surprised"}
