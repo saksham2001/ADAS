@@ -6,6 +6,13 @@
 
 [Demo Video](https://youtu.be/GD053njx0fU)
 
+
+### Project Achievements
+* 3rd Prize in [Hack-a-Motive](https://vit.ac.in/hackamotiVE/)
+* Runner Up in Emerging Technologies in [HackBattle](https://hackbattle.ieeecsvit.com/)
+* Best in Hardware Project in [HackOff](https://www.hackoff.tech/)
+
+
 ### Features
 
 1. Emotion Recognition
